@@ -136,26 +136,32 @@
     box.innerHTML = '<h3>Your estimate</h3>' + estimateHtml(estimate(state.type, state.vals));
   }
 
+  var SUBJECT_LABEL = {purchase:'Purchase', sale:'Sale', 'switch':'Re-Mortgage', 'self-build':'Self-Build', other:'Other Property Matter'};
+
   function buildMessage(){
     var v = state.vals, T = QTYPES[state.type], lines = [];
-    lines.push('Quote request from jackbarry.ie', '', 'Type: '+T.label);
-    T.fields.forEach(function(f){
-      var val = (v[f.id]||'').trim();
-      if(val) lines.push(f.label.replace(/\?$/,'')+': '+val);
-    });
-    lines.push('', 'Name: '+(v['q-name']||'').trim());
+    lines.push('Quote Request for '+SUBJECT_LABEL[state.type], '');
+    lines.push('Name: '+(v['q-name']||'').trim());
     if((v['q-phone']||'').trim()) lines.push('Phone: '+v['q-phone'].trim());
     if((v['q-email']||'').trim()) lines.push('Email: '+v['q-email'].trim());
+    var details = [];
+    T.fields.forEach(function(f){
+      var val = (v[f.id]||'').trim();
+      if(val && (f.id==='q-price' || f.id==='q-loan') && parseMoney(val)) val = money(parseMoney(val));
+      if(val) details.push(f.label.replace(/\?$/,'')+': '+val);
+    });
+    if(details.length){ lines.push(''); lines = lines.concat(details); }
     var e = state.type==='other' ? null : estimate(state.type, v);
     if(e && e.rows){
-      lines.push('', 'Estimate shown on the website (plus VAT as shown):');
+      lines.push('', 'Estimate shown on the website:');
       e.rows.forEach(function(r){ lines.push('  '+r[0]+': '+(typeof r[1]==='number' ? money(r[1]) : r[1])); });
       lines.push('  '+e.totalLabel+': '+money(e.total));
     }
+    lines.push('', 'Sent from the quote page at jackbarry.ie');
     return lines.join('\n');
   }
   function mailtoHref(msg){
-    var subject = 'Quote request: '+QTYPES[state.type].label+(((state.vals['q-name']||'').trim()) ? ' ('+state.vals['q-name'].trim()+')' : '');
+    var subject = 'Quote Request - '+(state.vals['q-name']||'').trim();
     return 'mailto:'+TO+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg);
   }
 
